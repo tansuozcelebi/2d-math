@@ -505,7 +505,7 @@ export default function App() {
         {/* Header */}
         <div className="text-center mb-8 sticky top-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-6">
           <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
-            ✨ Parametrik 2D Şekil Üreteci
+            FABUS Parametrik 2D Şekil Üreteci
           </h1>
           <p className="text-blue-200 text-lg">
             Her panel başlığında formülü göster/gizle butonunu kullanabilirsiniz. Panelleri sürükleyerek boyutlandırın.

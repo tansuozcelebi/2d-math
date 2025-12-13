@@ -31,8 +31,8 @@ export const DE = {
   // About Page
   about: {
     title: 'Über',
-    profileTitle: 'Algorithmus-Ingenieur',
-    profileSubtitle: 'Mathematische Visualisierung & Parametrisches Design',
+    profileTitle: 'Fabus.app',
+    profileSubtitle: 'Das Fabus.app-Team mit Sitz in Izmir entwickelt eine BPM- und CRM-Software mit MES, WMS und DMS mit ihrer starken und dynamischen Struktur.',
     
     aboutSection: '🎯 Über',
     aboutText: 'Ein Softwareentwickler, der Mathematik und Kunstdesign kombiniert. Spezialisiert auf parametrische 2D-Formenerzeugung, fraktale Geometrie und dynamische Visualisierung. Dieses Projekt zeigt, wie mathematische Formulierungen ästhetisch und interaktiv visualisiert werden können.',

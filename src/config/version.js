@@ -1,7 +1,9 @@
 // Versiyon bilgisi - package.json ile senkronize
 export const APP_VERSION = '1.0.7';
-export const APP_NAME = '2D Parametrik Şekil Üreteci';
-export const AUTHOR = 'Algoritma Mühendisi';
+export const APP_NAME = '2D Parametrik Matematiksel Şekil Üreteci';
+export const AUTHOR = 'Tansu Özçelebi';
+export const REPO_URL = 'https://github.com/tansuozcelebi/2d-math';
+export const LINKEDIN_URL = 'https://www.linkedin.com/showcase/fabus-app';
 
 export const VERSION_HISTORY = [
   {

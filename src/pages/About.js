@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, Github, Linkedin, Globe, Package } from 'lucide-react';
-import { APP_VERSION, APP_NAME, AUTHOR, VERSION_HISTORY } from '../config/version';
+import { APP_VERSION, APP_NAME, AUTHOR, VERSION_HISTORY, REPO_URL, LINKEDIN_URL } from '../config/version';
 import { useLanguage } from '../hooks/useLanguage';
 
 export default function About() {
@@ -124,7 +124,7 @@ export default function About() {
             <h3 className="text-xl font-semibold text-white mb-6 text-center">{t.about.contactSection}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <a 
-                href="mailto:your-email@example.com"
+                href="mailto:info@fabus.app"
                 className="flex flex-col items-center gap-2 p-4 bg-blue-600/20 hover:bg-blue-600/40 rounded-lg border border-blue-400/30 transition-all duration-300 group"
               >
                 <Mail size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
@@ -132,7 +132,7 @@ export default function About() {
               </a>
               
               <a 
-                href="https://github.com"
+                href={REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center gap-2 p-4 bg-purple-600/20 hover:bg-purple-600/40 rounded-lg border border-purple-400/30 transition-all duration-300 group"
@@ -142,7 +142,7 @@ export default function About() {
               </a>
               
               <a 
-                href="https://linkedin.com"
+                href={LINKEDIN_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center gap-2 p-4 bg-blue-600/20 hover:bg-blue-600/40 rounded-lg border border-blue-400/30 transition-all duration-300 group"

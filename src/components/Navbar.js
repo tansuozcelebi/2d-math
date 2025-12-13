@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Globe, Sigma } from 'lucide-react';
 import { APP_VERSION } from '../config/version';
 import { useLanguage } from '../hooks/useLanguage';
+import { buildShapes } from '../config/shapesList';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -12,37 +13,7 @@ const Navbar = () => {
   const { t, language, languages, changeLanguage } = useLanguage();
   const safeT = t || { nav: { home: 'Home', about: 'About' } };
 
-  const shapeLinks = [
-    { id: 'rose1', name: 'Rose' },
-    { id: 'spiral', name: 'Spiral' },
-    { id: 'lissajous', name: 'Lissajous' },
-    { id: 'polygon', name: 'Rotating Polygon' },
-    { id: 'triangle', name: 'Layered Triangle' },
-    { id: 'superellipse', name: 'Superellipse' },
-    { id: 'rose2', name: 'Rose (alt)' },
-    { id: 'rose3', name: 'Rose (alt 2)' },
-    { id: 'polygon2', name: 'Rotating Polygon (8)' },
-    { id: 'lissajousPro', name: 'Lissajous (Pro)' },
-    { id: 'hypotrochoid', name: 'Hypotrochoid' },
-    { id: 'epitrochoid', name: 'Epitrochoid' },
-    { id: 'arch_spiral', name: 'Archimedean Spiral' },
-    { id: 'log_spiral', name: 'Log Spiral' },
-    { id: 'fermat_spiral', name: 'Fermat Spiral' },
-    { id: 'lemniscate', name: 'Lemniscate (∞)' },
-    { id: 'astroid', name: 'Astroid' },
-    { id: 'deltoid', name: 'Deltoid' },
-    { id: 'cardioid', name: 'Cardioid' },
-    { id: 'nephroid', name: 'Nephroid' },
-    { id: 'cycloid', name: 'Cycloid' },
-    { id: 'epicycloid', name: 'Epicycloid' },
-    { id: 'hypocycloid', name: 'Hypocycloid' },
-    { id: 'superformula-advanced', name: 'Superformula' },
-    { id: 'wave_circle', name: 'Wave Circle' },
-    { id: 'moire_polar', name: 'Moiré (Polar)' },
-    { id: 'polygon_polar', name: 'Polygon Morph (Polar)' },
-    { id: 'param_noise', name: 'Param Noise' },
-    { id: 'rose_combo', name: 'Rose Combo' }
-  ];
+  const shapeLinks = useMemo(() => buildShapes(safeT).map(s => ({ id: s.id, name: s.title })), [safeT]);
 
   const isActive = (path) => location.pathname === path;
 

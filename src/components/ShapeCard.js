@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import gsap from 'gsap';
 import { Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
@@ -86,27 +86,27 @@ const Formulas = {
   lemniscate: {
     formula: 'r² = a² cos(2θ)',
     description: 'Bernoulli Lemniscate',
-    params: 'a: yarıçap'
+    params: 'a: yarıçap, b: genişlik'
   },
   astroid: {
     formula: 'x = a cos³t, y = a sin³t',
     description: 'Astroid',
-    params: 'a: yarıçap'
+    params: 'a: yarıçap, n: üstel değer'
   },
   deltoid: {
     formula: 'x = 2a cos t + a cos 2t',
     description: 'Deltoid',
-    params: 'a: yarıçap'
+    params: 'a: yarıçap, k: frekans'
   },
   cardioid: {
     formula: 'r = a(1 + cos θ)',
     description: 'Kardioid',
-    params: 'a: yarıçap'
+    params: 'a: yarıçap, offset: çıkıntı'
   },
   nephroid: {
     formula: 'r = a(1 − cos θ)',
     description: 'Nefroid',
-    params: 'a: yarıçap'
+    params: 'a: yarıçap, offset: çıkıntı'
   },
   cycloid: {
     formula: 'x = r(t − sin t), y = r(1 − cos t)',
@@ -152,6 +152,11 @@ const Formulas = {
     formula: 'r = a cos(kθ) + b cos(mθ)',
     description: 'Rose Kombinasyonu',
     params: 'a, b: genlik; k, m: frekans'
+  },
+  trefoil: {
+    formula: 'x = a·sin(t) + b·sin(nt), y = a·cos(t) − b·cos(nt)',
+    description: 'Trefoil Knot (Düğüm)',
+    params: 'a: ölçek; b: genlik; n: frekans'
   }
 };
 
@@ -228,49 +233,49 @@ const ParametricShapes = {
     samples: 900
   },
   lemniscate: {
-    params: ['a'],
+    params: ['a', 'b'],
     point: (t, p) => {
       const theta = t;
       const c = Math.cos(2 * theta);
       const r = c >= 0 ? p.a * Math.sqrt(c) : 0;
-      return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
+      return { x: r * Math.cos(theta) * p.b, y: r * Math.sin(theta) };
     },
     tMax: () => TAU,
     samples: 1000
   },
   astroid: {
-    params: ['a'],
+    params: ['a', 'n'],
     point: (t, p) => ({
-      x: p.a * Math.pow(Math.cos(t), 3),
-      y: p.a * Math.pow(Math.sin(t), 3)
+      x: p.a * Math.pow(Math.cos(t), p.n),
+      y: p.a * Math.pow(Math.sin(t), p.n)
     }),
     tMax: () => TAU,
     samples: 900
   },
   deltoid: {
-    params: ['a'],
+    params: ['a', 'k'],
     point: (t, p) => ({
-      x: 2 * p.a * Math.cos(t) + p.a * Math.cos(2 * t),
-      y: 2 * p.a * Math.sin(t) - p.a * Math.sin(2 * t)
+      x: (p.k - 1) * p.a * Math.cos(t) + p.a * Math.cos((p.k - 1) * t),
+      y: (p.k - 1) * p.a * Math.sin(t) - p.a * Math.sin((p.k - 1) * t)
     }),
     tMax: () => TAU,
     samples: 900
   },
   cardioid: {
-    params: ['a'],
+    params: ['a', 'offset'],
     point: (t, p) => {
       const theta = t;
-      const r = p.a * (1 + Math.cos(theta));
+      const r = p.a * (1 + p.offset * Math.cos(theta));
       return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
     },
     tMax: () => TAU,
     samples: 900
   },
   nephroid: {
-    params: ['a'],
+    params: ['a', 'offset'],
     point: (t, p) => {
       const theta = t;
-      const r = p.a * (1 - Math.cos(theta));
+      const r = p.a * (1 - p.offset * Math.cos(theta));
       return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
     },
     tMax: () => TAU,
@@ -368,6 +373,15 @@ const ParametricShapes = {
       const r = p.a * Math.cos(p.k * theta) + p.b * Math.cos(p.m * theta);
       return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
     },
+    tMax: () => TAU,
+    samples: 1200
+  },
+  trefoil: {
+    params: ['a', 'b', 'n'],
+    point: (t, p) => ({
+      x: p.a * Math.sin(t) + p.b * Math.sin(p.n * t),
+      y: p.a * Math.cos(t) - p.b * Math.cos(p.n * t)
+    }),
     tMax: () => TAU,
     samples: 1200
   }
@@ -549,10 +563,9 @@ const BaseShapeGenerators = {
 
 const ShapeGenerators = { ...BaseShapeGenerators, ...ParametricGenerators };
 
-const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximized, onMaximize, style, onResize, id }) => {
+const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximized, onMaximize, style, onResize, id, cardWidth, cardHeight }) => {
   const [params, setParams] = useState(defaultParams);
   const [rotation, setRotation] = useState(0);
-  const [svgSize, setSvgSize] = useState(250);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showFormula, setShowFormula] = useState(false);
@@ -560,11 +573,22 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
   const dragStartPos = useRef({ x: 0, y: 0 });
   const gsapTimeline = useRef(null);
   const { t } = useLanguage();
-  const safeT = t || { buttons: { showFormula: 'Show formula', hideFormula: 'Hide formula' }, home: { size: 'Size', px: 'px' } };
+  const translationFallback = t || { buttons: { showFormula: 'Show formula', hideFormula: 'Hide formula' }, home: { size: 'Size', px: 'px' } };
 
   const updateParam = (key, value) => {
     setParams(prev => ({ ...prev, [key]: parseFloat(value) }));
   };
+
+  useEffect(() => {
+    setParams(defaultParams);
+  }, [defaultParams]);
+
+  const svgSize = useMemo(() => {
+    const baseW = Math.max(180, (cardWidth || 400) - 32); // account for padding
+    const baseH = Math.max(180, (cardHeight || 500) - 220); // header + controls + sliders
+    const cap = isMaximized ? 700 : 450;
+    return Math.min(baseW, baseH, cap);
+  }, [cardWidth, cardHeight, isMaximized]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -623,61 +647,45 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
     <div 
       ref={cardRef}
       data-card-id={id}
-      className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-full transition-all ${isMaximized ? 'z-50 fixed inset-4' : ''}`}
+      className={`bg-white rounded-lg overflow-hidden flex flex-col h-full transition-all ${isMaximized ? 'z-50 fixed inset-4' : ''}`}
       style={style}
     >
       <div 
-        className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 flex items-center justify-between text-white cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow"
+        className="card-drag-handle bg-gradient-to-r from-blue-600 to-purple-600 p-2 flex items-center justify-between text-white cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow"
         onMouseDown={handleMouseDown}
       >
-        <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing flex-1">
-          <GripHorizontal size={18} />
-          <h3 className="text-lg font-semibold">{title}</h3>
+        <div className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing flex-1">
+          <GripHorizontal size={14} />
+          <h3 className="text-base font-semibold">{title}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowFormula(!showFormula)}
-            className="p-2 hover:bg-white/20 rounded transition-colors"
-            title={showFormula ? (safeT.buttons?.hideFormula || 'Hide formula') : (safeT.buttons?.showFormula || 'Show formula')}
+            className="p-1.5 hover:bg-white/20 rounded transition-colors"
+            title={showFormula ? (translationFallback.buttons?.hideFormula || 'Hide formula') : (translationFallback.buttons?.showFormula || 'Show formula')}
           >
-            {showFormula ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showFormula ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
           <button
             onClick={onMaximize}
-            className="p-2 hover:bg-white/20 rounded transition-colors"
+            className="p-1.5 hover:bg-white/20 rounded transition-colors"
           >
-            {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
         </div>
       </div>
 
       {showFormula && Formulas[shapeType] && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-200 p-4">
-          <div className="text-sm">
-            <p className="text-gray-700 font-semibold mb-1">{Formulas[shapeType].description}</p>
-            <p className="text-blue-700 font-mono text-lg mb-2">{Formulas[shapeType].formula}</p>
-            <p className="text-gray-600 text-xs">{Formulas[shapeType].params}</p>
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-200 p-4 overflow-hidden">
+          <div className="text-sm break-words">
+            <p className="text-gray-700 font-semibold mb-1 break-words">{Formulas[shapeType].description}</p>
+            <p className="text-blue-700 font-mono text-lg mb-2 break-words overflow-x-auto whitespace-nowrap">{Formulas[shapeType].formula}</p>
+            <p className="text-gray-600 text-xs break-words">{Formulas[shapeType].params}</p>
           </div>
         </div>
       )}
 
       <div className={`flex-1 overflow-auto p-4 flex flex-col gap-4 ${isMaximized ? 'min-h-screen' : ''}`}>
-        <div className="flex justify-center">
-          <div className="flex gap-3 items-center mb-2">
-            <label className="text-sm text-gray-600">{safeT.home?.size || 'Size'}</label>
-            <input
-              type="range"
-              min="150"
-              max={isMaximized ? 600 : 350}
-              step="10"
-              value={svgSize}
-              onChange={(e) => setSvgSize(parseInt(e.target.value, 10))}
-              className="w-32"
-            />
-            <span className="text-sm text-gray-700">{svgSize}{safeT.home?.px || 'px'}</span>
-          </div>
-        </div>
-        
         <div className="flex justify-center flex-1">
           <svg 
             width={svgSize} 
@@ -703,10 +711,10 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
           </svg>
         </div>
 
-        <div className={`space-y-3 ${isMaximized ? 'grid grid-cols-2 gap-4' : ''}`}>
+        <div className={`space-y-1.5 ${isMaximized ? 'grid grid-cols-2 gap-2' : ''}`}>
           {Object.entries(defaultParams).map(([key]) => (
             key !== 'rotation' && (
-              <div key={key} className="flex flex-col gap-1 bg-gray-50 p-3 rounded">
+              <div key={key} className="flex flex-col gap-0.5 bg-gray-50 p-2 rounded">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-gray-700">{paramMeta[key]?.label || key}</label>
                   <span className="text-sm font-semibold text-blue-600">
@@ -720,19 +728,13 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
                   step={paramMeta[key]?.step ?? 0.1}
                   value={params[key]}
                   onChange={(e) => updateParam(key, e.target.value)}
-                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
               </div>
             )
           ))}
         </div>
       </div>
-
-      <div
-        className="resize-handle absolute bottom-0 right-0 w-6 h-6 bg-blue-600 cursor-se-resize hover:bg-blue-700 transition-colors"
-        onMouseDown={handleMouseDown}
-        style={{ cursor: 'nwse-resize' }}
-      />
     </div>
   );
 };
