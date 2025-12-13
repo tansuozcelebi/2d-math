@@ -152,7 +152,7 @@ export default function About() {
               </a>
               
               <a 
-                href="https://yourwebsite.com"
+                href="https://www.fabus.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center gap-2 p-4 bg-purple-600/20 hover:bg-purple-600/40 rounded-lg border border-purple-400/30 transition-all duration-300 group"

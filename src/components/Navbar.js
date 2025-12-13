@@ -1,14 +1,48 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, Sigma } from 'lucide-react';
 import { APP_VERSION } from '../config/version';
 import { useLanguage } from '../hooks/useLanguage';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isLangOpen, setIsLangOpen] = React.useState(false);
+  const [isFormulasOpen, setIsFormulasOpen] = React.useState(false);
   const location = useLocation();
   const { t, language, languages, changeLanguage } = useLanguage();
+  const safeT = t || { nav: { home: 'Home', about: 'About' } };
+
+  const shapeLinks = [
+    { id: 'rose1', name: 'Rose' },
+    { id: 'spiral', name: 'Spiral' },
+    { id: 'lissajous', name: 'Lissajous' },
+    { id: 'polygon', name: 'Rotating Polygon' },
+    { id: 'triangle', name: 'Layered Triangle' },
+    { id: 'superellipse', name: 'Superellipse' },
+    { id: 'rose2', name: 'Rose (alt)' },
+    { id: 'rose3', name: 'Rose (alt 2)' },
+    { id: 'polygon2', name: 'Rotating Polygon (8)' },
+    { id: 'lissajousPro', name: 'Lissajous (Pro)' },
+    { id: 'hypotrochoid', name: 'Hypotrochoid' },
+    { id: 'epitrochoid', name: 'Epitrochoid' },
+    { id: 'arch_spiral', name: 'Archimedean Spiral' },
+    { id: 'log_spiral', name: 'Log Spiral' },
+    { id: 'fermat_spiral', name: 'Fermat Spiral' },
+    { id: 'lemniscate', name: 'Lemniscate (∞)' },
+    { id: 'astroid', name: 'Astroid' },
+    { id: 'deltoid', name: 'Deltoid' },
+    { id: 'cardioid', name: 'Cardioid' },
+    { id: 'nephroid', name: 'Nephroid' },
+    { id: 'cycloid', name: 'Cycloid' },
+    { id: 'epicycloid', name: 'Epicycloid' },
+    { id: 'hypocycloid', name: 'Hypocycloid' },
+    { id: 'superformula-advanced', name: 'Superformula' },
+    { id: 'wave_circle', name: 'Wave Circle' },
+    { id: 'moire_polar', name: 'Moiré (Polar)' },
+    { id: 'polygon_polar', name: 'Polygon Morph (Polar)' },
+    { id: 'param_noise', name: 'Param Noise' },
+    { id: 'rose_combo', name: 'Rose Combo' }
+  ];
 
   const isActive = (path) => location.pathname === path;
 
@@ -20,7 +54,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 font-bold text-2xl hover:text-blue-100 transition-colors">
             <span className="text-2xl">✨</span>
             <div className="flex flex-col">
-              <span>2D Şekil Üreteci</span>
+              <span>FABUS 2D Şekil Üreteci</span>
               <span className="text-xs text-blue-200 font-normal">v{APP_VERSION}</span>
             </div>
           </Link>
@@ -33,7 +67,7 @@ const Navbar = () => {
                 isActive('/') ? 'text-white font-semibold border-b-2 border-white' : 'hover:text-blue-100'
               }`}
             >
-              {t.nav.home}
+              {safeT.nav.home}
             </Link>
             <Link
               to="/about"
@@ -41,8 +75,35 @@ const Navbar = () => {
                 isActive('/about') ? 'text-white font-semibold border-b-2 border-white' : 'hover:text-blue-100'
               }`}
             >
-              {t.nav.about}
+              {safeT.nav.about}
             </Link>
+
+            {/* Formulas Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsFormulasOpen(!isFormulasOpen)}
+                className="flex items-center gap-2 px-3 py-2 hover:bg-white/20 rounded transition-colors"
+              >
+                <Sigma size={18} />
+                <span>Şekiller</span>
+              </button>
+              {isFormulasOpen && (
+                <div className="absolute right-0 mt-2 bg-blue-800 rounded-lg shadow-lg overflow-hidden z-50 w-64">
+                  <div className="max-h-[40vh] overflow-y-auto">
+                    {shapeLinks.map((s) => (
+                      <Link
+                        key={s.id}
+                        to={`/#${s.id}`}
+                        onClick={() => setIsFormulasOpen(false)}
+                        className="block px-4 py-2 hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        {s.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Language Dropdown */}
             <div className="relative">
@@ -94,7 +155,7 @@ const Navbar = () => {
               }`}
               onClick={() => setIsOpen(false)}
             >
-              {t.nav.home}
+              {safeT.nav.home}
             </Link>
             <Link
               to="/about"
@@ -103,7 +164,7 @@ const Navbar = () => {
               }`}
               onClick={() => setIsOpen(false)}
             >
-              {t.nav.about}
+              {safeT.nav.about}
             </Link>
             <div className="border-t border-white/20 pt-2 mt-2">
               <div className="px-4 py-2 text-sm font-semibold text-blue-200">Dil / Language / Sprache</div>
@@ -122,6 +183,19 @@ const Navbar = () => {
                   <span>{lang.name}</span>
                 </button>
               ))}
+              <div className="px-4 py-2 text-sm font-semibold text-blue-200 mt-2">Şekiller</div>
+              <div className="max-h-[40vh] overflow-y-auto">
+                {shapeLinks.map((s) => (
+                  <Link
+                    key={s.id}
+                    to={`/#${s.id}`}
+                    onClick={() => setIsOpen(false)}
+                    className="block px-4 py-2 rounded transition-colors hover:bg-white/10 text-sm"
+                  >
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}

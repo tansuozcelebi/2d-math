@@ -19,21 +19,24 @@ const TRANSLATIONS = {
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    // localStorage'dan dili al veya varsayılan TR'yi kullan
-    const saved = localStorage.getItem('language');
-    return saved || 'TR';
+    // Read legacy/new keys, normalize to upper-case, fallback to TR
+    const saved = localStorage.getItem('selectedLanguage') || localStorage.getItem('language');
+    const normalized = saved ? saved.toUpperCase() : 'TR';
+    return LANGUAGES[normalized] ? normalized : 'TR';
   });
 
-  // Dil değiştiğinde localStorage'a kaydet
+  // Persist both old and new keys for compatibility
   useEffect(() => {
+    localStorage.setItem('selectedLanguage', language);
     localStorage.setItem('language', language);
   }, [language]);
 
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS[language] || TRANSLATIONS.TR;
 
   const changeLanguage = (lang) => {
-    if (LANGUAGES[lang]) {
-      setLanguage(lang);
+    const normalized = lang?.toUpperCase();
+    if (normalized && LANGUAGES[normalized]) {
+      setLanguage(normalized);
     }
   };
 

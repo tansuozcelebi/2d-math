@@ -1,430 +1,297 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
-import { Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
-import { APP_VERSION } from '../config/version';
 import { useLanguage } from '../hooks/useLanguage';
+import { APP_VERSION } from '../config/version';
+import ShapeCard from '../components/ShapeCard';
 
-// Formülasyonların açıklamaları
-const Formulas = {
-  rose: {
-    formula: 'r = a·sin(n/d·θ)',
-    description: 'Rose/Rozet Eğrisi',
-    params: 'n: yaprak sayısı, d: yoğunluk'
-  },
-  spiral: {
-    formula: 'r = a·t, θ = 2πkt',
-    description: 'Arşimet Spirali',
-    params: 'turns: dönüş sayısı, lines: çizgi sayısı'
-  },
-  lissajous: {
-    formula: 'x = A·sin(at + δ), y = B·sin(bt)',
-    description: 'Lissajous Eğrisi',
-    params: 'a, b: frekans, δ: faz farkı'
-  },
-  polygon: {
-    formula: 'Katmanlı açısal transformasyon',
-    description: 'Dönen Çokgen',
-    params: 'sides: kenar sayısı, layers: katman'
-  },
-  triangleSpiral: {
-    formula: 'Eşkenar Δ + Rotasyon',
-    description: 'Katmanlı Üçgen Spiral',
-    params: 'layers: katman, twist: dönme'
-  },
-  superellipse: {
-    formula: 'Gielis Formülü: |x/a|^n + |y/b|^n = 1',
-    description: 'Superellipse',
-    params: 'n1, n2, n3: şekil parametreleri'
-  },
-  polygon2: {
-    formula: 'Katmanlı açısal transformasyon (8-kenar)',
-    description: 'Dönen Çokgen (8)',
-    params: 'sides: kenar sayısı, layers: katman'
-  }
-};
+const CARD_WIDTH = 400;
+const CARD_HEIGHT = 500;
+const CARD_GAP = 20;
 
-// Parametrik şekil formülasyonları
-const ShapeGenerators = {
-  rose: (params) => {
-    const { n, d, size, rotation } = params;
-    const points = [];
-    const steps = 360;
-    for (let i = 0; i <= steps; i++) {
-      const theta = (i / steps) * Math.PI * 2 * d;
-      const r = size * Math.sin((n / d) * theta);
-      const x = 150 + r * Math.cos(theta + rotation);
-      const y = 150 + r * Math.sin(theta + rotation);
-      points.push(`${x},${y}`);
-    }
-    return `M ${points.join(' L ')}`;
-  },
-
-  spiral: (params) => {
-    const { turns, size, lines, rotation } = params;
-    const paths = [];
-    for (let l = 0; l < lines; l++) {
-      const points = [];
-      const offset = (l / lines) * Math.PI * 2;
-      for (let i = 0; i <= 100; i++) {
-        const t = i / 100;
-        const theta = t * Math.PI * 2 * turns + offset + rotation;
-        const r = size * t;
-        const x = 150 + r * Math.cos(theta);
-        const y = 150 + r * Math.sin(theta);
-        points.push(`${x},${y}`);
-      }
-      paths.push(`M ${points.join(' L ')}`);
-    }
-    return paths;
-  },
-
-  lissajous: (params) => {
-    const { a, b, delta, size, rotation } = params;
-    const points = [];
-    const steps = 360;
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * Math.PI * 2;
-      const x = 150 + size * Math.sin(a * t + rotation);
-      const y = 150 + size * Math.sin(b * t + delta);
-      points.push(`${x},${y}`);
-    }
-    return `M ${points.join(' L ')}`;
-  },
-
-  polygon: (params) => {
-    const { sides, layers, size, rotation } = params;
-    const paths = [];
-    for (let layer = 0; layer < layers; layer++) {
-      const points = [];
-      const layerRotation = rotation + (layer / layers) * (Math.PI / sides);
-      const layerSize = size * (1 - layer / (layers * 1.5));
-      
-      for (let i = 0; i <= sides; i++) {
-        const angle = (i / sides) * Math.PI * 2 + layerRotation;
-        const x = 150 + layerSize * Math.cos(angle);
-        const y = 150 + layerSize * Math.sin(angle);
-        points.push(`${x},${y}`);
-      }
-      paths.push(`M ${points.join(' L ')}`);
-    }
-    return paths;
-  },
-
-  superellipse: (params) => {
-    const { n1, n2, n3, size, rotation } = params;
-    const points = [];
-    const steps = 360;
-    for (let i = 0; i <= steps; i++) {
-      const theta = (i / steps) * Math.PI * 2;
-      const t1 = Math.abs(Math.cos(n1 * theta / 4));
-      const t2 = Math.abs(Math.sin(n1 * theta / 4));
-      const r = size * Math.pow(Math.pow(t1, n2) + Math.pow(t2, n3), -1 / n2);
-      const x = 150 + r * Math.cos(theta + rotation);
-      const y = 150 + r * Math.sin(theta + rotation);
-      points.push(`${x},${y}`);
-    }
-    return `M ${points.join(' L ')}`;
-  },
-
-  polygon2: (params) => {
-    const { sides, layers, size, rotation } = params;
-    const paths = [];
-    for (let layer = 0; layer < layers; layer++) {
-      const points = [];
-      const layerRotation = rotation + (layer / layers) * (Math.PI / sides);
-      const layerSize = size * (1 - layer / (layers * 1.5));
-      
-      for (let i = 0; i <= sides; i++) {
-        const angle = (i / sides) * Math.PI * 2 + layerRotation;
-        const x = 150 + layerSize * Math.cos(angle);
-        const y = 150 + layerSize * Math.sin(angle);
-        points.push(`${x},${y}`);
-      }
-      paths.push(`M ${points.join(' L ')}`);
-    }
-    return paths;
-  },
-
-  triangleSpiral: (params) => {
-    const { layers, size, twist, rotation } = params;
-    const paths = [];
-    
-    const getTrianglePoints = (scale, rot) => {
-      const angles = [Math.PI / 2, Math.PI / 2 + (2 * Math.PI / 3), Math.PI / 2 + (4 * Math.PI / 3)];
-      return angles.map(angle => ({
-        x: 150 + scale * Math.cos(angle + rot),
-        y: 150 + scale * Math.sin(angle + rot)
-      }));
-    };
-
-    for (let layer = 0; layer < layers; layer++) {
-      const t = layer / layers;
-      const layerSize = size * (1 - t * 0.7);
-      const layerRotation = rotation + (t * twist * Math.PI / 4);
-      
-      const points = getTrianglePoints(layerSize, layerRotation);
-      paths.push(`M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y} L ${points[2].x},${points[2].y} Z`);
-    }
-    
-    return paths;
-  }
-};
-
-const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, style, onResize, id }) => {
-  const [params, setParams] = useState(defaultParams);
-  const [rotation, setRotation] = useState(0);
-  const [svgSize, setSvgSize] = useState(250);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [showFormula, setShowFormula] = useState(false);
-  const cardRef = React.useRef(null);
-  const dragStartPos = useRef({ x: 0, y: 0 });
-  const gsapTimeline = useRef(null);
-  const { t } = useLanguage();
-
-  const updateParam = (key, value) => {
-    setParams(prev => ({ ...prev, [key]: parseFloat(value) }));
+const createLayouts = (shapeList) => shapeList.reduce((acc, shape, index) => {
+  const col = index % 3;
+  const row = Math.floor(index / 3);
+  acc[shape.id] = {
+    x: col * (CARD_WIDTH + CARD_GAP),
+    y: row * (CARD_HEIGHT + CARD_GAP),
+    w: CARD_WIDTH,
+    h: CARD_HEIGHT
   };
-
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setRotation(prev => (prev + 0.02) % (Math.PI * 2));
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleMouseDown = (e) => {
-    const header = e.target.closest('div')?.parentElement;
-    if (header && header.classList.contains('bg-gradient-to-r')) {
-      dragStartPos.current = { x: e.clientX, y: e.clientY };
-      setIsDragging(true);
-    } else if (e.target.closest('.resize-handle')) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  React.useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e) => {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      
-      if (cardRef.current && onResize) {
-        onResize(deltaX, deltaY);
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (cardRef.current && gsapTimeline.current) {
-        gsap.to(cardRef.current, {
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-          duration: 0.3,
-          ease: 'back.out'
-        });
-      }
-      setIsDragging(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragStart, onResize]);
-
-  const paths = ShapeGenerators[shapeType]({ ...params, rotation });
-
-  return (
-    <div 
-      ref={cardRef}
-      data-card-id={id}
-      className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-full transition-all ${isMaximized ? 'z-50 fixed inset-4' : ''}`}
-      style={style}
-    >
-      <div 
-        className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 flex items-center justify-between text-white cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow"
-        onMouseDown={handleMouseDown}
-      >
-        <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing flex-1">
-          <GripHorizontal size={18} />
-          <h3 className="text-lg font-semibold">{title}</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFormula(!showFormula)}
-            className="p-2 hover:bg-white/20 rounded transition-colors"
-            title={showFormula ? t.buttons.hideFormula : t.buttons.showFormula}
-          >
-            {showFormula ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-          <button
-            onClick={onMaximize}
-            className="p-2 hover:bg-white/20 rounded transition-colors"
-          >
-            {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-          </button>
-        </div>
-      </div>
-
-      {showFormula && Formulas[shapeType] && (
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-200 p-4">
-          <div className="text-sm">
-            <p className="text-gray-700 font-semibold mb-1">{Formulas[shapeType].description}</p>
-            <p className="text-blue-700 font-mono text-lg mb-2">{Formulas[shapeType].formula}</p>
-            <p className="text-gray-600 text-xs">{Formulas[shapeType].params}</p>
-          </div>
-        </div>
-      )}
-
-      <div className={`flex-1 overflow-auto p-4 flex flex-col gap-4 ${isMaximized ? 'min-h-screen' : ''}`}>
-        <div className="flex justify-center">
-          <div className="flex gap-3 items-center mb-2">
-            <label className="text-sm text-gray-600">{t.home.size}</label>
-            <input
-              type="range"
-              min="150"
-              max={isMaximized ? 600 : 350}
-              step="10"
-              value={svgSize}
-              onChange={(e) => setSvgSize(parseInt(e.target.value))}
-              className="w-32"
-            />
-            <span className="text-sm text-gray-700">{svgSize}{t.home.px}</span>
-          </div>
-        </div>
-        
-        <div className="flex justify-center flex-1">
-          <svg 
-            width={svgSize} 
-            height={svgSize} 
-            className="border-2 border-gray-300 rounded-lg bg-gray-50 shadow-md"
-            viewBox={`0 0 300 300`}
-            style={{ minWidth: svgSize, minHeight: svgSize }}
-          >
-            {Array.isArray(paths) ? (
-              paths.map((path, idx) => (
-                <path
-                  key={idx}
-                  d={path}
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="1"
-                  opacity={0.8}
-                />
-              ))
-            ) : (
-              <path d={paths} fill="none" stroke="#2563eb" strokeWidth="1.5" />
-            )}
-          </svg>
-        </div>
-
-        <div className={`space-y-3 ${isMaximized ? 'grid grid-cols-2 gap-4' : ''}`}>
-          {Object.entries(defaultParams).map(([key, value]) => (
-            key !== 'rotation' && (
-              <div key={key} className="flex flex-col gap-1 bg-gray-50 p-3 rounded">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700">{key}</label>
-                  <span className="text-sm font-semibold text-blue-600">{params[key].toFixed(2)}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max={key === 'size' ? 145 : key === 'turns' ? 10 : key.includes('n') ? 10 : 20}
-                  step="0.1"
-                  value={params[key]}
-                  onChange={(e) => updateParam(key, e.target.value)}
-                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
-            )
-          ))}
-        </div>
-      </div>
-
-      <div
-        className="resize-handle absolute bottom-0 right-0 w-6 h-6 bg-blue-600 cursor-se-resize hover:bg-blue-700 transition-colors"
-        onMouseDown={handleMouseDown}
-        style={{ cursor: 'nwse-resize' }}
-      />
-    </div>
-  );
-};
+  return acc;
+}, {});
 
 export default function Home() {
   const [maximizedCard, setMaximizedCard] = useState(null);
   const { t } = useLanguage();
-  const [layouts, setLayouts] = useState({
-    rose1: { x: 0, y: 0, w: 400, h: 500 },
-    spiral: { x: 420, y: 0, w: 400, h: 500 },
-    lissajous: { x: 840, y: 0, w: 400, h: 500 },
-    polygon: { x: 0, y: 520, w: 400, h: 500 },
-    triangle: { x: 420, y: 520, w: 400, h: 500 },
-    superellipse: { x: 840, y: 520, w: 400, h: 500 },
-    rose2: { x: 0, y: 1040, w: 400, h: 500 },
-    rose3: { x: 420, y: 1040, w: 400, h: 500 },
-    polygon2: { x: 840, y: 1040, w: 400, h: 500 },
-  });
+  const safeT = t || { shapes: {}, home: { title: 'Shapes', subtitle: '', size: 'Size', px: 'px' }, buttons: { showFormula: 'Show', hideFormula: 'Hide' } };
+  const shapes = useMemo(() => {
+    const baseShapes = [
+      {
+        title: safeT.shapes.rose || 'Rose',
+        type: 'rose',
+        params: { n: 5, d: 1, size: 135 },
+        id: 'rose1'
+      },
+      {
+        title: safeT.shapes.spiral || 'Spiral',
+        type: 'spiral',
+        params: { turns: 3, size: 125, lines: 12 },
+        id: 'spiral'
+      },
+      {
+        title: safeT.shapes.lissajous || 'Lissajous',
+        type: 'lissajous',
+        params: { a: 3, b: 4, delta: Math.PI / 2, size: 125 },
+        id: 'lissajous'
+      },
+      {
+        title: safeT.shapes.polygon || 'Rotating Polygon',
+        type: 'polygon',
+        params: { sides: 6, layers: 12, size: 135 },
+        id: 'polygon'
+      },
+      {
+        title: safeT.shapes.triangle || 'Layered Triangle',
+        type: 'triangleSpiral',
+        params: { layers: 15, size: 135, twist: 2 },
+        id: 'triangle'
+      },
+      {
+        title: safeT.shapes.superellipse || 'Superellipse',
+        type: 'superellipse',
+        params: { n1: 4, n2: 2.5, n3: 2.5, size: 135 },
+        id: 'superellipse'
+      },
+      {
+        title: safeT.shapes.rose2 || 'Rose (alt)',
+        type: 'rose',
+        params: { n: 7, d: 3, size: 135 },
+        id: 'rose2'
+      },
+      {
+        title: safeT.shapes.rose3 || 'Rose (alt 2)',
+        type: 'rose',
+        params: { n: 11, d: 4, size: 135 },
+        id: 'rose3'
+      },
+      {
+        title: safeT.shapes.polygon2 || 'Rotating Polygon (8)',
+        type: 'polygon2',
+        params: { sides: 8, layers: 10, size: 135 },
+        id: 'polygon2'
+      }
+    ];
 
-  const shapes = [
-    {
-      title: t.shapes.rose,
-      type: 'rose',
-      params: { n: 5, d: 1, size: 135 },
-      id: 'rose1'
-    },
-    {
-      title: t.shapes.spiral,
-      type: 'spiral',
-      params: { turns: 3, size: 125, lines: 12 },
-      id: 'spiral'
-    },
-    {
-      title: t.shapes.lissajous,
-      type: 'lissajous',
-      params: { a: 3, b: 4, delta: Math.PI / 2, size: 125 },
-      id: 'lissajous'
-    },
-    {
-      title: t.shapes.polygon,
-      type: 'polygon',
-      params: { sides: 6, layers: 12, size: 135 },
-      id: 'polygon'
-    },
-    {
-      title: t.shapes.triangle,
-      type: 'triangleSpiral',
-      params: { layers: 15, size: 135, twist: 2 },
-      id: 'triangle'
-    },
-    {
-      title: t.shapes.superellipse,
-      type: 'superellipse',
-      params: { n1: 4, n2: 2.5, n3: 2.5, size: 135 },
-      id: 'superellipse'
-    },
-    {
-      title: t.shapes.rose2,
-      type: 'rose',
-      params: { n: 7, d: 3, size: 135 },
-      id: 'rose2'
-    },
-    {
-      title: t.shapes.rose3,
-      type: 'rose',
-      params: { n: 11, d: 4, size: 135 },
-      id: 'rose3'
-    },
-    {
-      title: t.shapes.polygon2,
-      type: 'polygon2',
-      params: { sides: 8, layers: 10, size: 135 },
-      id: 'polygon2'
-    }
-  ];
+    const advancedShapes = [
+      {
+        title: 'Lissajous (Pro)',
+        type: 'lissajousPro',
+        params: { A: 140, B: 140, a: 3, b: 2, delta: 0.7 },
+        paramMeta: {
+          A: { min: 10, max: 200, step: 1, label: 'A' },
+          B: { min: 10, max: 200, step: 1, label: 'B' },
+          a: { min: 1, max: 15, step: 1, label: 'a' },
+          b: { min: 1, max: 15, step: 1, label: 'b' },
+          delta: { min: 0, max: Math.PI * 2, step: 0.01, label: 'δ (rad)' }
+        },
+        id: 'lissajousPro'
+      },
+      {
+        title: 'Hypotrochoid',
+        type: 'hypotrochoid',
+        params: { R: 140, r: 45, d: 85 },
+        paramMeta: {
+          R: { min: 20, max: 200, step: 1, label: 'R' },
+          r: { min: 5, max: 180, step: 1, label: 'r' },
+          d: { min: 0, max: 200, step: 1, label: 'd' }
+        },
+        id: 'hypotrochoid'
+      },
+      {
+        title: 'Epitrochoid',
+        type: 'epitrochoid',
+        params: { R: 110, r: 45, d: 90 },
+        paramMeta: {
+          R: { min: 20, max: 200, step: 1, label: 'R' },
+          r: { min: 5, max: 180, step: 1, label: 'r' },
+          d: { min: 0, max: 200, step: 1, label: 'd' }
+        },
+        id: 'epitrochoid'
+      },
+      {
+        title: 'Archimedean Spiral',
+        type: 'arch_spiral',
+        params: { a: 0, b: 6, turns: 10 },
+        paramMeta: {
+          a: { min: 0, max: 200, step: 1, label: 'a' },
+          b: { min: 0.5, max: 20, step: 0.1, label: 'b' },
+          turns: { min: 1, max: 30, step: 1, label: 'turns' }
+        },
+        id: 'arch_spiral'
+      },
+      {
+        title: 'Log Spiral',
+        type: 'log_spiral',
+        params: { a: 3, b: 0.08, turns: 9 },
+        paramMeta: {
+          a: { min: 1, max: 50, step: 1, label: 'a' },
+          b: { min: 0.01, max: 0.25, step: 0.01, label: 'b' },
+          turns: { min: 1, max: 20, step: 1, label: 'turns' }
+        },
+        id: 'log_spiral'
+      },
+      {
+        title: 'Fermat Spiral',
+        type: 'fermat_spiral',
+        params: { scale: 18, turns: 18 },
+        paramMeta: {
+          scale: { min: 2, max: 50, step: 1, label: 'scale' },
+          turns: { min: 1, max: 40, step: 1, label: 'turns' }
+        },
+        id: 'fermat_spiral'
+      },
+      {
+        title: 'Lemniscate (∞)',
+        type: 'lemniscate',
+        params: { a: 140 },
+        paramMeta: { a: { min: 20, max: 200, step: 1, label: 'a' } },
+        id: 'lemniscate'
+      },
+      {
+        title: 'Astroid',
+        type: 'astroid',
+        params: { a: 150 },
+        paramMeta: { a: { min: 20, max: 200, step: 1, label: 'a' } },
+        id: 'astroid'
+      },
+      {
+        title: 'Deltoid',
+        type: 'deltoid',
+        params: { a: 60 },
+        paramMeta: { a: { min: 10, max: 120, step: 1, label: 'a' } },
+        id: 'deltoid'
+      },
+      {
+        title: 'Cardioid',
+        type: 'cardioid',
+        params: { a: 110 },
+        paramMeta: { a: { min: 10, max: 200, step: 1, label: 'a' } },
+        id: 'cardioid'
+      },
+      {
+        title: 'Nephroid',
+        type: 'nephroid',
+        params: { a: 120 },
+        paramMeta: { a: { min: 10, max: 200, step: 1, label: 'a' } },
+        id: 'nephroid'
+      },
+      {
+        title: 'Cycloid',
+        type: 'cycloid',
+        params: { r: 55, turns: 6 },
+        paramMeta: {
+          r: { min: 10, max: 120, step: 1, label: 'r' },
+          turns: { min: 1, max: 20, step: 1, label: 'turns' }
+        },
+        id: 'cycloid'
+      },
+      {
+        title: 'Epicycloid',
+        type: 'epicycloid',
+        params: { r: 35, k: 4 },
+        paramMeta: {
+          r: { min: 10, max: 120, step: 1, label: 'r' },
+          k: { min: 1, max: 12, step: 1, label: 'k' }
+        },
+        id: 'epicycloid'
+      },
+      {
+        title: 'Hypocycloid',
+        type: 'hypocycloid',
+        params: { r: 45, k: 5 },
+        paramMeta: {
+          r: { min: 10, max: 120, step: 1, label: 'r' },
+          k: { min: 2, max: 12, step: 1, label: 'k' }
+        },
+        id: 'hypocycloid'
+      },
+      {
+        title: 'Superformula',
+        type: 'superformula',
+        params: { m: 7, a: 1, b: 1, n1: 0.6, n2: 1.7, n3: 1.7 },
+        paramMeta: {
+          m: { min: 0, max: 20, step: 1, label: 'm' },
+          a: { min: 0.1, max: 2, step: 0.01, label: 'a' },
+          b: { min: 0.1, max: 2, step: 0.01, label: 'b' },
+          n1: { min: 0.1, max: 10, step: 0.01, label: 'n1' },
+          n2: { min: 0.1, max: 10, step: 0.01, label: 'n2' },
+          n3: { min: 0.1, max: 10, step: 0.01, label: 'n3' }
+        },
+        id: 'superformula-advanced'
+      },
+      {
+        title: 'Wave Circle',
+        type: 'wave_circle',
+        params: { a: 120, b: 35, k: 12 },
+        paramMeta: {
+          a: { min: 10, max: 200, step: 1, label: 'a' },
+          b: { min: 0, max: 120, step: 1, label: 'b' },
+          k: { min: 1, max: 40, step: 1, label: 'k' }
+        },
+        id: 'wave_circle'
+      },
+      {
+        title: 'Moiré (Polar)',
+        type: 'moire_polar',
+        params: { a: 75, b: 55, k: 17, m: 19 },
+        paramMeta: {
+          a: { min: 0, max: 150, step: 1, label: 'a' },
+          b: { min: 0, max: 150, step: 1, label: 'b' },
+          k: { min: 1, max: 40, step: 1, label: 'k' },
+          m: { min: 1, max: 40, step: 1, label: 'm' }
+        },
+        id: 'moire_polar'
+      },
+      {
+        title: 'Polygon Morph (Polar)',
+        type: 'polygon_polar',
+        params: { n: 7, morph: 0.25 },
+        paramMeta: {
+          n: { min: 3, max: 20, step: 1, label: 'n' },
+          morph: { min: 0, max: 1, step: 0.01, label: 'morph' }
+        },
+        id: 'polygon_polar'
+      },
+      {
+        title: 'Parametric Noise',
+        type: 'param_noise',
+        params: { r: 120, eps: 25, n: 13, m: 17 },
+        paramMeta: {
+          r: { min: 10, max: 200, step: 1, label: 'r' },
+          eps: { min: 0, max: 100, step: 1, label: 'ε' },
+          n: { min: 1, max: 40, step: 1, label: 'n' },
+          m: { min: 1, max: 40, step: 1, label: 'm' }
+        },
+        id: 'param_noise'
+      },
+      {
+        title: 'Rose Combo',
+        type: 'rose_combo',
+        params: { a: 120, b: 40, k: 7, m: 11 },
+        paramMeta: {
+          a: { min: 0, max: 200, step: 1, label: 'a' },
+          b: { min: 0, max: 200, step: 1, label: 'b' },
+          k: { min: 1, max: 30, step: 1, label: 'k' },
+          m: { min: 1, max: 30, step: 1, label: 'm' }
+        },
+        id: 'rose_combo'
+      }
+    ];
+
+    return [...baseShapes, ...advancedShapes];
+  }, [safeT]);
+
+  const [layouts, setLayouts] = useState(() => createLayouts(shapes));
 
   const handleMaximize = useCallback((id) => {
     const element = document.querySelector(`[data-card-id="${id}"]`);
@@ -489,10 +356,10 @@ export default function Home() {
       <div className="relative z-10 max-w-full">
         <div className="text-center mb-8 sticky top-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-6">
           <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
-            {t.home.title}
+            {safeT.home?.title || 'Parametric 2D Shape Generator'}
           </h1>
           <p className="text-blue-200 text-lg">
-            {t.home.subtitle}
+            {safeT.home?.subtitle || ''}
           </p>
         </div>
 
@@ -500,11 +367,12 @@ export default function Home() {
           {shapes.map((shape) => {
             if (maximizedCard === shape.id) return null;
             
-            const layout = layouts[shape.id];
+            const layout = layouts[shape.id] || { x: 0, y: 0, w: CARD_WIDTH, h: CARD_HEIGHT };
             return (
               <div
                 key={shape.id}
                 className="absolute transition-all"
+                id={shape.id}
                 style={{
                   left: `${layout.x}px`,
                   top: `${layout.y}px`,
@@ -517,6 +385,7 @@ export default function Home() {
                   title={shape.title}
                   shapeType={shape.type}
                   defaultParams={shape.params}
+                  paramMeta={shape.paramMeta}
                   isMaximized={false}
                   onMaximize={() => handleMaximize(shape.id)}
                   onResize={(dx, dy) => handleCardResize(shape.id, dx, dy)}
@@ -536,6 +405,7 @@ export default function Home() {
                       title={shape.title}
                       shapeType={shape.type}
                       defaultParams={shape.params}
+                      paramMeta={shape.paramMeta}
                       isMaximized={true}
                       onMaximize={() => handleMaximize(shape.id)}
                     />
@@ -547,7 +417,7 @@ export default function Home() {
         </div>
 
         <div className="mt-12 text-center text-blue-300 text-sm">
-          <p>{t.home.footer}</p>
+          <p>{safeT.home?.footer || ''}</p>
           <p className="mt-2 text-blue-400/60 text-xs">v{APP_VERSION}</p>
         </div>
       </div>
