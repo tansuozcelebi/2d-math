@@ -1,101 +1,48 @@
-#!/usr/bin/env node
-
-/**
- * Otomatik versiyon güncelleme scripti
- * Kullanım: node scripts/updateVersion.js [major|minor|patch]
- */
-
 const fs = require('fs');
 const path = require('path');
 
-const versionFile = path.join(__dirname, '../src/config/version.js');
-const packageFile = path.join(__dirname, '../package.json');
-
-// Mevcut versiyonu oku
-const packageJson = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
-const currentVersion = packageJson.version;
-
-// Versiyon tipini al
-const versionType = process.argv[2] || 'patch';
-if (!['major', 'minor', 'patch'].includes(versionType)) {
-  console.error('Hata: Versiyon tipi major, minor veya patch olmalıdır');
-  process.exit(1);
+function bumpSemver(version, type) {
+  const [major, minor, patch] = version.split('.').map(Number);
+  if (type === 'major') return `${major + 1}.0.0`;
+  if (type === 'minor') return `${major}.${minor + 1}.0`;
+  return `${major}.${minor}.${patch + 1}`; // patch
 }
 
-// Versiyon numarasını artır
-const [major, minor, patch] = currentVersion.split('.').map(Number);
-let newVersion;
-
-switch (versionType) {
-  case 'major':
-    newVersion = `${major + 1}.0.0`;
-    break;
-  case 'minor':
-    newVersion = `${major}.${minor + 1}.0`;
-    break;
-  case 'patch':
-    newVersion = `${major}.${minor}.${patch + 1}`;
-    break;
+function readJSON(p) {
+  return JSON.parse(fs.readFileSync(p, 'utf8'));
 }
 
-// Package.json güncelle
-packageJson.version = newVersion;
-fs.writeFileSync(packageFile, JSON.stringify(packageJson, null, 2) + '\n');
+function writeJSON(p, obj) {
+  fs.writeFileSync(p, JSON.stringify(obj, null, 2) + '\n', 'utf8');
+}
 
-// Version.js dosyasını güncelle
-const today = new Date();
-const dateStr = `${today.getDate()} ${getMonthName(today.getMonth())} ${today.getFullYear()}`;
+function updateVersionFile(versionFilePath, newVersion) {
+  let content = fs.readFileSync(versionFilePath, 'utf8');
+  content = content.replace(/export const APP_VERSION = '([^']+)'/,
+    `export const APP_VERSION = '${newVersion}'`);
+  fs.writeFileSync(versionFilePath, content, 'utf8');
+}
 
-const versionContent = `// Versiyon bilgisi - package.json ile senkronize
-export const APP_VERSION = '${newVersion}';
-export const APP_NAME = '2D Parametrik Şekil Üreteci';
-export const AUTHOR = 'Algoritma Mühendisi';
+function main() {
+  const type = process.argv[2] || 'patch';
+  const root = process.cwd();
+  const pkgPath = path.join(root, 'package.json');
+  const versionFilePath = path.join(root, 'src', 'config', 'version.js');
 
-export const VERSION_HISTORY = [
-  {
-    version: '${newVersion}',
-    date: '${dateStr}',
-    features: [
-      // Yeni özellikler buraya eklenecek
-    ]
-  },
-];
+  const pkg = readJSON(pkgPath);
+  const current = pkg.version || '1.0.0';
+  const next = bumpSemver(current, type);
 
-export const FEATURES = [
-  {
-    title: 'Parametrik Formüller',
-    description: '7 farklı matematiksel formülasyonla dinamik şekil üretimi',
-    icon: '📐'
-  },
-  {
-    title: 'Etkileşimli Kontrol',
-    description: 'Gerçek zamanlı parametre ayarlayıcıları ve görselleştirme',
-    icon: '🎨'
-  },
-  {
-    title: 'Smooth Animasyonlar',
-    description: 'GSAP ile profesyonel pencere efektleri ve geçişler',
-    icon: '✨'
-  },
-  {
-    title: 'Responsive Tasarım',
-    description: 'Mobil ve masaüstü cihazlarda tam uyumluluk',
-    icon: '📱'
-  }
-];
-`;
+  // update package.json
+  pkg.version = next;
+  writeJSON(pkgPath, pkg);
 
-fs.writeFileSync(versionFile, versionContent);
+  // update src/config/version.js
+  updateVersionFile(versionFilePath, next);
 
-console.log(`✅ Versiyon başarıyla güncellendi: ${currentVersion} → ${newVersion}`);
-console.log(`📝 Dosyalar güncellendi:`);
-console.log(`   - package.json`);
-console.log(`   - src/config/version.js`);
+  console.log(`Version bumped: ${current} -> ${next}`);
+}
 
-function getMonthName(month) {
-  const months = [
-    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-  ];
-  return months[month];
+if (require.main === module) {
+  main();
 }

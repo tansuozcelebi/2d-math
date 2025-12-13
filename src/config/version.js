@@ -1,5 +1,5 @@
 // Versiyon bilgisi - package.json ile senkronize
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.7';
 export const APP_NAME = '2D Parametrik Şekil Üreteci';
 export const AUTHOR = 'Algoritma Mühendisi';
 

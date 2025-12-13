@@ -1,11 +1,11 @@
 {
   "name": "2d-math",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "description": "2D parametric shape generator with React",
   "scripts": {
     "start": "react-scripts start",
     "dev": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "node scripts/updateVersion.js patch && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "version:patch": "node scripts/updateVersion.js patch",

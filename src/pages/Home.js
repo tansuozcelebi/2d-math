@@ -289,7 +289,7 @@ export default function Home() {
     ];
 
     return [...baseShapes, ...advancedShapes];
-  }, [safeT]);
+  }, [t]);
 
   const [layouts, setLayouts] = useState(() => createLayouts(shapes));
 
