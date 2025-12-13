@@ -7,14 +7,19 @@
     "dev": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "version:patch": "node scripts/updateVersion.js patch",
+    "version:minor": "node scripts/updateVersion.js minor",
+    "version:major": "node scripts/updateVersion.js major"
   },
   "dependencies": {
+    "gsap": "^3.14.2",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-grid-layout": "^2.0.0",
-    "react-rnd": "^10.5.2"
+    "react-rnd": "^10.5.2",
+    "react-router-dom": "^7.10.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.22",

@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { Settings, Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
+import { Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
+import { APP_VERSION } from '../config/version';
+import { useLanguage } from '../hooks/useLanguage';
 
 // Formülasyonların açıklamaları
 const Formulas = {
@@ -41,10 +43,8 @@ const Formulas = {
   }
 };
 
-
 // Parametrik şekil formülasyonları
 const ShapeGenerators = {
-  // Rose/Rozet deseni: r = a·sin(k·θ)
   rose: (params) => {
     const { n, d, size, rotation } = params;
     const points = [];
@@ -59,7 +59,6 @@ const ShapeGenerators = {
     return `M ${points.join(' L ')}`;
   },
 
-  // Spiral: Arşimet spirali
   spiral: (params) => {
     const { turns, size, lines, rotation } = params;
     const paths = [];
@@ -79,7 +78,6 @@ const ShapeGenerators = {
     return paths;
   },
 
-  // Lissajous eğrisi
   lissajous: (params) => {
     const { a, b, delta, size, rotation } = params;
     const points = [];
@@ -93,7 +91,6 @@ const ShapeGenerators = {
     return `M ${points.join(' L ')}`;
   },
 
-  // Dönen çokgen
   polygon: (params) => {
     const { sides, layers, size, rotation } = params;
     const paths = [];
@@ -113,7 +110,6 @@ const ShapeGenerators = {
     return paths;
   },
 
-  // Superellipse/Gielis formülü basitleştirilmiş
   superellipse: (params) => {
     const { n1, n2, n3, size, rotation } = params;
     const points = [];
@@ -130,7 +126,6 @@ const ShapeGenerators = {
     return `M ${points.join(' L ')}`;
   },
 
-  // Dönen çokgen - polygon2 varyasyonu
   polygon2: (params) => {
     const { sides, layers, size, rotation } = params;
     const paths = [];
@@ -150,12 +145,10 @@ const ShapeGenerators = {
     return paths;
   },
 
-  // Üçgen spiral - katmanlı üçgen deseni
   triangleSpiral: (params) => {
     const { layers, size, twist, rotation } = params;
     const paths = [];
     
-    // Üçgenin köşe noktaları (eşkenar üçgen)
     const getTrianglePoints = (scale, rot) => {
       const angles = [Math.PI / 2, Math.PI / 2 + (2 * Math.PI / 3), Math.PI / 2 + (4 * Math.PI / 3)];
       return angles.map(angle => ({
@@ -187,6 +180,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
   const cardRef = React.useRef(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const gsapTimeline = useRef(null);
+  const { t } = useLanguage();
 
   const updateParam = (key, value) => {
     setParams(prev => ({ ...prev, [key]: parseFloat(value) }));
@@ -202,11 +196,9 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
   const handleMouseDown = (e) => {
     const header = e.target.closest('div')?.parentElement;
     if (header && header.classList.contains('bg-gradient-to-r')) {
-      // Dragging header
       dragStartPos.current = { x: e.clientX, y: e.clientY };
       setIsDragging(true);
     } else if (e.target.closest('.resize-handle')) {
-      // Resizing
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
     }
@@ -253,7 +245,6 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
       className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-full transition-all ${isMaximized ? 'z-50 fixed inset-4' : ''}`}
       style={style}
     >
-      {/* Header */}
       <div 
         className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 flex items-center justify-between text-white cursor-grab active:cursor-grabbing hover:shadow-lg transition-shadow"
         onMouseDown={handleMouseDown}
@@ -266,7 +257,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
           <button
             onClick={() => setShowFormula(!showFormula)}
             className="p-2 hover:bg-white/20 rounded transition-colors"
-            title={showFormula ? 'Formülü Gizle' : 'Formülü Göster'}
+            title={showFormula ? t.buttons.hideFormula : t.buttons.showFormula}
           >
             {showFormula ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -279,7 +270,6 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
         </div>
       </div>
 
-      {/* Formula Display */}
       {showFormula && Formulas[shapeType] && (
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-200 p-4">
           <div className="text-sm">
@@ -290,12 +280,10 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
         </div>
       )}
 
-      {/* Content */}
       <div className={`flex-1 overflow-auto p-4 flex flex-col gap-4 ${isMaximized ? 'min-h-screen' : ''}`}>
-        {/* SVG Canvas */}
         <div className="flex justify-center">
           <div className="flex gap-3 items-center mb-2">
-            <label className="text-sm text-gray-600">Boyut:</label>
+            <label className="text-sm text-gray-600">{t.home.size}</label>
             <input
               type="range"
               min="150"
@@ -305,7 +293,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
               onChange={(e) => setSvgSize(parseInt(e.target.value))}
               className="w-32"
             />
-            <span className="text-sm text-gray-700">{svgSize}px</span>
+            <span className="text-sm text-gray-700">{svgSize}{t.home.px}</span>
           </div>
         </div>
         
@@ -334,7 +322,6 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
           </svg>
         </div>
 
-        {/* Parameters */}
         <div className={`space-y-3 ${isMaximized ? 'grid grid-cols-2 gap-4' : ''}`}>
           {Object.entries(defaultParams).map(([key, value]) => (
             key !== 'rotation' && (
@@ -358,7 +345,6 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
         </div>
       </div>
 
-      {/* Resize Handle */}
       <div
         className="resize-handle absolute bottom-0 right-0 w-6 h-6 bg-blue-600 cursor-se-resize hover:bg-blue-700 transition-colors"
         onMouseDown={handleMouseDown}
@@ -368,8 +354,9 @@ const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, s
   );
 };
 
-export default function App() {
+export default function Home() {
   const [maximizedCard, setMaximizedCard] = useState(null);
+  const { t } = useLanguage();
   const [layouts, setLayouts] = useState({
     rose1: { x: 0, y: 0, w: 400, h: 500 },
     spiral: { x: 420, y: 0, w: 400, h: 500 },
@@ -384,55 +371,55 @@ export default function App() {
 
   const shapes = [
     {
-      title: 'Rose/Rozet',
+      title: t.shapes.rose,
       type: 'rose',
       params: { n: 5, d: 1, size: 135 },
       id: 'rose1'
     },
     {
-      title: 'Spiral',
+      title: t.shapes.spiral,
       type: 'spiral',
       params: { turns: 3, size: 125, lines: 12 },
       id: 'spiral'
     },
     {
-      title: 'Lissajous',
+      title: t.shapes.lissajous,
       type: 'lissajous',
       params: { a: 3, b: 4, delta: Math.PI / 2, size: 125 },
       id: 'lissajous'
     },
     {
-      title: 'Dönen Çokgen',
+      title: t.shapes.polygon,
       type: 'polygon',
       params: { sides: 6, layers: 12, size: 135 },
       id: 'polygon'
     },
     {
-      title: 'Katmanlı Üçgen',
+      title: t.shapes.triangle,
       type: 'triangleSpiral',
       params: { layers: 15, size: 135, twist: 2 },
       id: 'triangle'
     },
     {
-      title: 'Superellipse',
+      title: t.shapes.superellipse,
       type: 'superellipse',
       params: { n1: 4, n2: 2.5, n3: 2.5, size: 135 },
       id: 'superellipse'
     },
     {
-      title: 'Rose (7/3)',
+      title: t.shapes.rose2,
       type: 'rose',
       params: { n: 7, d: 3, size: 135 },
       id: 'rose2'
     },
     {
-      title: 'Rose (11/4)',
+      title: t.shapes.rose3,
       type: 'rose',
       params: { n: 11, d: 4, size: 135 },
       id: 'rose3'
     },
     {
-      title: 'Dönen Çokgen (8)',
+      title: t.shapes.polygon2,
       type: 'polygon2',
       params: { sides: 8, layers: 10, size: 135 },
       id: 'polygon2'
@@ -443,7 +430,6 @@ export default function App() {
     const element = document.querySelector(`[data-card-id="${id}"]`);
     if (element) {
       if (maximizedCard === id) {
-        // Minimize animation
         gsap.to(element, {
           inset: 'auto',
           width: layouts[id].w,
@@ -453,7 +439,6 @@ export default function App() {
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)'
         });
       } else {
-        // Maximize animation
         gsap.to(element, {
           inset: '1rem',
           width: 'auto',
@@ -502,17 +487,15 @@ export default function App() {
       </div>
 
       <div className="relative z-10 max-w-full">
-        {/* Header */}
         <div className="text-center mb-8 sticky top-0 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 py-6">
           <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
-            ✨ Parametrik 2D Şekil Üreteci
+            {t.home.title}
           </h1>
           <p className="text-blue-200 text-lg">
-            Her panel başlığında formülü göster/gizle butonunu kullanabilirsiniz. Panelleri sürükleyerek boyutlandırın.
+            {t.home.subtitle}
           </p>
         </div>
 
-        {/* Dashboard - Absolute Positioning for Resize */}
         <div className="relative" style={{ height: 'auto', minHeight: '100vh' }}>
           {shapes.map((shape) => {
             if (maximizedCard === shape.id) return null;
@@ -544,7 +527,6 @@ export default function App() {
             );
           })}
 
-          {/* Maximized Card */}
           {maximizedCard && (
             <div className="fixed inset-0 z-50 p-4 bg-black/50">
               {shapes.map((shape) => (
@@ -564,9 +546,9 @@ export default function App() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="mt-12 text-center text-blue-300 text-sm">
-          <p>💡 Panel sağ alt köşesini sürükleyerek boyutlarını değiştirebilirsiniz. Panelleri sürükleyerek yeniden düzenleyebilirsiniz.</p>
+          <p>{t.home.footer}</p>
+          <p className="mt-2 text-blue-400/60 text-xs">v{APP_VERSION}</p>
         </div>
       </div>
     </div>
