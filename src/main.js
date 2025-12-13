@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Circle, Settings } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Settings, Maximize2, Minimize2, GripHorizontal } from 'lucide-react';
 
 // Parametrik şekil formülasyonları
 const ShapeGenerators = {
@@ -116,9 +116,13 @@ const ShapeGenerators = {
   }
 };
 
-const ShapeCard = ({ title, shapeType, defaultParams }) => {
+const ShapeCard = ({ title, shapeType, defaultParams, isMaximized, onMaximize, style, onResize }) => {
   const [params, setParams] = useState(defaultParams);
   const [rotation, setRotation] = useState(0);
+  const [svgSize, setSvgSize] = useState(250);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const cardRef = React.useRef(null);
 
   const updateParam = (key, value) => {
     setParams(prev => ({ ...prev, [key]: parseFloat(value) }));
@@ -131,158 +135,303 @@ const ShapeCard = ({ title, shapeType, defaultParams }) => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleMouseDown = (e) => {
+    if (e.target.closest('.resize-handle')) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  React.useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+      
+      if (cardRef.current && onResize) {
+        onResize(deltaX, deltaY);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragStart, onResize]);
+
   const paths = ShapeGenerators[shapeType]({ ...params, rotation });
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4">
-      <h3 className="text-lg font-semibold mb-3 text-gray-800">{title}</h3>
-      
-      <svg width="300" height="300" className="border border-gray-200 rounded mb-3">
-        {Array.isArray(paths) ? (
-          paths.map((path, idx) => (
-            <path
-              key={idx}
-              d={path}
-              fill="none"
-              stroke="#333"
-              strokeWidth="1"
-              opacity={0.7}
-            />
-          ))
-        ) : (
-          <path d={paths} fill="none" stroke="#333" strokeWidth="1.5" />
-        )}
-      </svg>
-
-      <div className="space-y-2">
-        {Object.entries(defaultParams).map(([key, value]) => (
-          key !== 'rotation' && (
-            <div key={key} className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 w-16">{key}:</label>
-              <input
-                type="range"
-                min="0.5"
-                max={key === 'size' ? 145 : key === 'turns' ? 10 : key.includes('n') ? 10 : 20}
-                step="0.5"
-                value={params[key]}
-                onChange={(e) => updateParam(key, e.target.value)}
-                className="flex-1"
-              />
-              <span className="text-sm text-gray-700 w-12">{params[key].toFixed(1)}</span>
-            </div>
-          )
-        ))}
+    <div 
+      ref={cardRef}
+      className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-full transition-all ${isMaximized ? 'z-50 fixed inset-4' : ''}`}
+      style={style}
+    >
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 flex items-center justify-between text-white">
+        <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing">
+          <GripHorizontal size={18} />
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+        <button
+          onClick={onMaximize}
+          className="p-2 hover:bg-white/20 rounded transition-colors"
+        >
+          {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+        </button>
       </div>
+
+      {/* Content */}
+      <div className={`flex-1 overflow-auto p-4 flex flex-col gap-4 ${isMaximized ? 'min-h-screen' : ''}`}>
+        {/* SVG Canvas */}
+        <div className="flex justify-center">
+          <div className="flex gap-3 items-center mb-2">
+            <label className="text-sm text-gray-600">Boyut:</label>
+            <input
+              type="range"
+              min="150"
+              max={isMaximized ? 600 : 350}
+              step="10"
+              value={svgSize}
+              onChange={(e) => setSvgSize(parseInt(e.target.value))}
+              className="w-32"
+            />
+            <span className="text-sm text-gray-700">{svgSize}px</span>
+          </div>
+        </div>
+        
+        <div className="flex justify-center flex-1">
+          <svg 
+            width={svgSize} 
+            height={svgSize} 
+            className="border-2 border-gray-300 rounded-lg bg-gray-50 shadow-md"
+            viewBox={`0 0 300 300`}
+            style={{ minWidth: svgSize, minHeight: svgSize }}
+          >
+            {Array.isArray(paths) ? (
+              paths.map((path, idx) => (
+                <path
+                  key={idx}
+                  d={path}
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="1"
+                  opacity={0.8}
+                />
+              ))
+            ) : (
+              <path d={paths} fill="none" stroke="#2563eb" strokeWidth="1.5" />
+            )}
+          </svg>
+        </div>
+
+        {/* Parameters */}
+        <div className={`space-y-3 ${isMaximized ? 'grid grid-cols-2 gap-4' : ''}`}>
+          {Object.entries(defaultParams).map(([key, value]) => (
+            key !== 'rotation' && (
+              <div key={key} className="flex flex-col gap-1 bg-gray-50 p-3 rounded">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">{key}</label>
+                  <span className="text-sm font-semibold text-blue-600">{params[key].toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max={key === 'size' ? 145 : key === 'turns' ? 10 : key.includes('n') ? 10 : 20}
+                  step="0.1"
+                  value={params[key]}
+                  onChange={(e) => updateParam(key, e.target.value)}
+                  className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+              </div>
+            )
+          ))}
+        </div>
+      </div>
+
+      {/* Resize Handle */}
+      <div
+        className="resize-handle absolute bottom-0 right-0 w-6 h-6 bg-blue-600 cursor-se-resize hover:bg-blue-700 transition-colors"
+        onMouseDown={handleMouseDown}
+        style={{ cursor: 'nwse-resize' }}
+      />
     </div>
   );
 };
 
 export default function App() {
   const [showInfo, setShowInfo] = useState(false);
+  const [maximizedCard, setMaximizedCard] = useState(null);
 
   const shapes = [
     {
       title: 'Rose/Rozet',
       type: 'rose',
-      params: { n: 5, d: 1, size: 135 }
+      params: { n: 5, d: 1, size: 135 },
+      id: 'rose1'
     },
     {
       title: 'Spiral',
       type: 'spiral',
-      params: { turns: 3, size: 125, lines: 12 }
+      params: { turns: 3, size: 125, lines: 12 },
+      id: 'spiral'
     },
     {
       title: 'Lissajous',
       type: 'lissajous',
-      params: { a: 3, b: 4, delta: Math.PI / 2, size: 125 }
+      params: { a: 3, b: 4, delta: Math.PI / 2, size: 125 },
+      id: 'lissajous'
     },
     {
       title: 'Dönen Çokgen',
       type: 'polygon',
-      params: { sides: 6, layers: 12, size: 135 }
+      params: { sides: 6, layers: 12, size: 135 },
+      id: 'polygon'
     },
     {
       title: 'Katmanlı Üçgen',
       type: 'triangleSpiral',
-      params: { layers: 15, size: 135, twist: 2 }
+      params: { layers: 15, size: 135, twist: 2 },
+      id: 'triangle'
     },
     {
       title: 'Superellipse',
       type: 'superellipse',
-      params: { n1: 4, n2: 2.5, n3: 2.5, size: 135 }
+      params: { n1: 4, n2: 2.5, n3: 2.5, size: 135 },
+      id: 'superellipse'
     },
     {
       title: 'Rose (7/3)',
       type: 'rose',
-      params: { n: 7, d: 3, size: 135 }
+      params: { n: 7, d: 3, size: 135 },
+      id: 'rose2'
+    },
+    {
+      title: 'Rose (11/4)',
+      type: 'rose',
+      params: { n: 11, d: 4, size: 135 },
+      id: 'rose3'
+    },
+    {
+      title: 'Dönen Çokgen (8)',
+      type: 'polygon',
+      params: { sides: 8, layers: 10, size: 135 },
+      id: 'polygon2'
     }
   ];
 
+  const handleMaximize = useCallback((id) => {
+    setMaximizedCard(maximizedCard === id ? null : id);
+  }, [maximizedCard]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Parametrik 2D Şekil Üreteci
+          <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
+            ✨ Parametrik 2D Şekil Üreteci
           </h1>
-          <p className="text-gray-600">
-            Matematiksel formüller ile animasyonlu geometrik desenler
+          <p className="text-blue-200 text-lg mb-6">
+            Matematiksel formüller ile animasyonlu geometrik desenler — Panelleri sürükle, yeniden boyutlandır ve keşfet!
           </p>
           
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl font-medium"
           >
-            <Settings size={18} />
+            <Settings size={20} />
             {showInfo ? 'Bilgileri Gizle' : 'Formülasyonları Göster'}
           </button>
         </div>
 
+        {/* Info Section */}
         {showInfo && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Matematiksel Formüller</h2>
-            <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
-              <div>
-                <strong>Rose/Rozet:</strong> r = a·sin(n/d·θ)
-                <br />Parametreler: n (yaprak sayısı), d (yoğunluk)
+          <div className="bg-white/10 backdrop-blur-md rounded-lg shadow-xl p-8 mb-8 border border-white/20">
+            <h2 className="text-2xl font-bold mb-6 text-white">📐 Matematiksel Formüller</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 text-white">
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-blue-300">Rose/Rozet:</strong>
+                <div className="text-sm mt-2">r = a·sin(n/d·θ)</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: n, d</div>
               </div>
-              <div>
-                <strong>Spiral:</strong> r = a·t, θ = 2πkt
-                <br />Parametreler: turns (dönüş), lines (çizgi sayısı)
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-purple-300">Spiral:</strong>
+                <div className="text-sm mt-2">r = a·t, θ = 2πkt</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: turns, lines</div>
               </div>
-              <div>
-                <strong>Lissajous:</strong> x = A·sin(at + δ), y = B·sin(bt)
-                <br />Parametreler: a, b (frekans), δ (faz farkı)
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-pink-300">Lissajous:</strong>
+                <div className="text-sm mt-2">x = A·sin(at + δ)</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: a, b, δ</div>
               </div>
-              <div>
-                <strong>Dönen Çokgen:</strong> Katmanlı açısal transformasyon
-                <br />Parametreler: sides (kenar), layers (katman)
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-cyan-300">Dönen Çokgen:</strong>
+                <div className="text-sm mt-2">Katmanlı açısal transform</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: sides, layers</div>
               </div>
-              <div>
-                <strong>Katmanlı Üçgen:</strong> Eşkenar üçgen + rotasyon
-                <br />Parametreler: layers (katman), twist (dönme)
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-green-300">Katmanlı Üçgen:</strong>
+                <div className="text-sm mt-2">Eşkenar Δ + Rotasyon</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: layers, twist</div>
               </div>
-              <div>
-                <strong>Superellipse:</strong> Gielis formülü
-                <br />Parametreler: n1, n2, n3 (şekil parametreleri)
+              <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                <strong className="text-yellow-300">Superellipse:</strong>
+                <div className="text-sm mt-2">Gielis Formülü</div>
+                <div className="text-xs text-gray-300 mt-1">Parametreler: n1, n2, n3</div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Dashboard Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
           {shapes.map((shape, idx) => (
-            <ShapeCard
-              key={idx}
-              title={shape.title}
-              shapeType={shape.type}
-              defaultParams={shape.params}
-            />
+            <div 
+              key={shape.id}
+              className={`${maximizedCard === shape.id ? 'hidden' : 'block'} h-96 min-h-96`}
+            >
+              <ShapeCard
+                title={shape.title}
+                shapeType={shape.type}
+                defaultParams={shape.params}
+                isMaximized={false}
+                onMaximize={() => handleMaximize(shape.id)}
+              />
+            </div>
           ))}
+          
+          {/* Maximized Card */}
+          {maximizedCard && (
+            <div className="fixed inset-0 z-50 p-4">
+              {shapes.map((shape) => (
+                maximizedCard === shape.id && (
+                  <div key={shape.id} className="w-full h-full">
+                    <ShapeCard
+                      title={shape.title}
+                      shapeType={shape.type}
+                      defaultParams={shape.params}
+                      isMaximized={true}
+                      onMaximize={() => handleMaximize(shape.id)}
+                    />
+                  </div>
+                )
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>Slider'ları kullanarak parametreleri değiştirebilir ve farklı desenler oluşturabilirsiniz</p>
+        {/* Footer */}
+        <div className="mt-12 text-center text-blue-300 text-sm">
+          <p>💡 İpucu: Panelleri sürükleyerek yeniden düzenleyebilir, boyutu değiştirebilir ve parametreleri keşfedebilirsiniz.</p>
         </div>
       </div>
     </div>
