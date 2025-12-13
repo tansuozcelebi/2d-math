@@ -170,7 +170,7 @@ export default function About() {
             {t.about.footer}
           </p>
           <p className="text-blue-400/60 text-xs mt-2">
-            v{APP_VERSION} | {t.about.footerNote}
+            © 2024-2025 FABUS.app | v{APP_VERSION} | {t.about.footerNote}
           </p>
         </div>
       </div>

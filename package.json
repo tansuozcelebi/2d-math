@@ -1,6 +1,6 @@
 {
   "name": "2d-math",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "2D parametric shape generator with React",
   "scripts": {
     "start": "react-scripts start",
@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "gsap": "^3.14.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

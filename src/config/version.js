@@ -1,11 +1,24 @@
 // Versiyon bilgisi - package.json ile senkronize
-export const APP_VERSION = '1.0.7';
+export const APP_VERSION = '1.0.9';
 export const APP_NAME = '2D Parametrik Matematiksel Şekil Üreteci';
 export const AUTHOR = 'Tansu Özçelebi';
 export const REPO_URL = 'https://github.com/tansuozcelebi/2d-math';
 export const LINKEDIN_URL = 'https://www.linkedin.com/showcase/fabus-app';
 
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.7',
+    date: '14 Aralık 2024',
+    features: [
+      'Dinamik şekil listesi - Navbar ve Home paylaşılan konfigürasyondan güncellenir',
+      'SVG otomatik ölçeklendirme - Kartlar resize edildiğinde şekil otomatik ölçeklenir',
+      'Hash-tabanlı kart odaklanması - Menüden şekil seçildiğinde ekrana otomatik scroll',
+      'Trefoil Knot şekli eklendi',
+      'Manifest ikon boyutları düzeltildi (128x127, 302x300)',
+      'GitHub, LinkedIn ve email konfigürasyonları merkezi hale getirildi',
+      'React Fast Refresh sorunları çözüldü'
+    ]
+  },
   {
     version: '1.0.0',
     date: '13 Aralık 2024',

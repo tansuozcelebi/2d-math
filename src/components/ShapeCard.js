@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import gsap from 'gsap';
 import { Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const TAU = Math.PI * 2;
 
@@ -570,6 +572,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showFormula, setShowFormula] = useState(false);
   const cardRef = useRef(null);
+  const svgContainerRef = useRef(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const gsapTimeline = useRef(null);
   const { t } = useLanguage();
@@ -643,6 +646,143 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
   const generator = ShapeGenerators[shapeType];
   const paths = generator ? generator({ ...params, rotation }) : '';
 
+  const handleExport = async (format) => {
+    try {
+      if (!svgContainerRef.current) {
+        console.error('SVG container not found');
+        alert('Export başarısız oldu. Lütfen sayfayı yenileyin.');
+        return;
+      }
+
+      const formulaData = Formulas[shapeType] || {};
+      const timestamp = new Date().toLocaleString('tr-TR');
+      const watermark = '2d.fabus.app sitesinden oluşturulmuştur';
+
+      // SVG container'ı canvas'a dönüştür
+      const canvas = await html2canvas(svgContainerRef.current, {
+        backgroundColor: '#f3f4f6',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false
+      });
+
+      if (format === 'jpg') {
+        // Watermark ekle
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.font = '12px Arial';
+        ctx.fillText(watermark, 10, canvas.height - 10);
+
+        // Canvas'ı JPEG'e dönüştür ve indir
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${title.replace(/\s+/g, '_')}-${id}.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 'image/jpeg', 0.95);
+      } else if (format === 'pdf') {
+        // PDF oluştur
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          putOnlyUsedFonts: true
+        });
+
+        // Türkçe karakter desteği için
+        pdf.setFont('helvetica');
+        pdf.setLanguage('tr');
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 15;
+        let yPos = margin;
+
+        // Başlık
+        pdf.setFontSize(18);
+        pdf.text(title, margin, yPos);
+        yPos += 10;
+
+        // Formül
+        if (formulaData.description) {
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Tanım:', margin, yPos);
+          yPos += 6;
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(10);
+          const splitDesc = pdf.splitTextToSize(formulaData.description, pageWidth - 2 * margin);
+          pdf.text(splitDesc, margin, yPos);
+          yPos += splitDesc.length * 5 + 5;
+        }
+
+        // Formül denklemi
+        if (formulaData.formula) {
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Formül:', margin, yPos);
+          yPos += 6;
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(10);
+          const splitFormula = pdf.splitTextToSize(formulaData.formula, pageWidth - 2 * margin);
+          pdf.text(splitFormula, margin, yPos);
+          yPos += splitFormula.length * 5 + 5;
+        }
+
+        // Parametreler
+        if (Object.keys(params).length > 0) {
+          pdf.setFontSize(12);
+          pdf.setFont(undefined, 'bold');
+          pdf.text('Parametreler:', margin, yPos);
+          yPos += 6;
+          pdf.setFont(undefined, 'normal');
+          pdf.setFontSize(10);
+          Object.entries(params).forEach(([key, value]) => {
+            const paramText = `${key}: ${typeof value === 'number' ? value.toFixed(3) : value}`;
+            pdf.text(paramText, margin + 5, yPos);
+            yPos += 5;
+          });
+          yPos += 5;
+        }
+
+        // SVG resmini ekle
+        try {
+          const imgData = canvas.toDataURL('image/jpeg');
+          const imgWidth = pageWidth - 2 * margin;
+          const imgHeight = (canvas.height / canvas.width) * imgWidth;
+
+          if (yPos + imgHeight > pageHeight - margin) {
+            pdf.addPage();
+            yPos = margin;
+          }
+
+          pdf.addImage(imgData, 'JPEG', margin, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 10;
+        } catch (err) {
+          console.error('SVG to image conversion failed:', err);
+        }
+
+        // Watermark
+        pdf.setFontSize(9);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(watermark, margin, pageHeight - 10);
+        pdf.text(`Oluşturulma: ${timestamp}`, margin, pageHeight - 5);
+
+        // PDF'yi indir
+        pdf.save(`${title.replace(/\s+/g, '_')}-${id}.pdf`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export başarısız oldu: ' + error.message);
+    }
+  };
+
   return (
     <div 
       ref={cardRef}
@@ -659,6 +799,20 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
           <h3 className="text-base font-semibold">{title}</h3>
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleExport('jpg')}
+            className="px-2 py-1 text-xs font-semibold hover:bg-white/20 rounded transition-colors"
+            title="Export as JPG"
+          >
+            JPG
+          </button>
+          <button
+            onClick={() => handleExport('pdf')}
+            className="px-2 py-1 text-xs font-semibold hover:bg-white/20 rounded transition-colors"
+            title="Export as PDF"
+          >
+            PDF
+          </button>
           <button
             onClick={() => setShowFormula(!showFormula)}
             className="p-1.5 hover:bg-white/20 rounded transition-colors"
@@ -687,6 +841,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
 
       <div className={`flex-1 overflow-auto p-4 flex flex-col gap-4 ${isMaximized ? 'min-h-screen' : ''}`}>
         <div className="flex justify-center flex-1">
+          <div ref={svgContainerRef} style={{ display: 'inline-block' }}>
           <svg 
             width={svgSize} 
             height={svgSize} 
@@ -709,6 +864,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
               <path d={paths} fill="none" stroke="#2563eb" strokeWidth="1.5" />
             )}
           </svg>
+          </div>
         </div>
 
         <div className={`space-y-1.5 ${isMaximized ? 'grid grid-cols-2 gap-2' : ''}`}>
