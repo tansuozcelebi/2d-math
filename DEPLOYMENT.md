@@ -93,17 +93,68 @@ Since this app uses React Router, you need to configure SiteGround to handle cli
 
 ### Domain Configuration
 
-If deploying to a subdomain or subfolder:
+The production domain is **`2d.krea.tr`**. It is referenced in these files:
+
+| File | What it holds |
+| --- | --- |
+| `public/index.html` | `canonical`, `og:url`, `og:image`, `twitter:image` |
+| `public/sitemap.xml` | Page URLs (`<loc>`) |
+| `public/robots.txt` | `Sitemap:` line |
+| `src/config/version.js` | `SITE_DOMAIN` / `SITE_URL` (used by the export watermark) |
+
+If the domain ever changes again, update those four files — everything inside
+the React app reads the domain from `SITE_DOMAIN` in `src/config/version.js`.
+
+If deploying to a subfolder instead of the domain root:
 
 1. **Update `package.json`:**
    ```json
-   "homepage": "https://yourdomain.com/subfolder"
+   "homepage": "https://2d.krea.tr/subfolder"
    ```
 
 2. **Rebuild:**
    ```bash
    npm run build
    ```
+
+### Domain Migration: `2d.fabus.app` → `2d.krea.tr`
+
+The app moved from `2d.fabus.app` to `2d.krea.tr`. To keep existing links and
+search rankings, serve a permanent (301) redirect from the old host.
+
+1. **Point DNS** for `2d.krea.tr` at the SiteGround server (A record, or CNAME
+   to the hosting hostname) and issue a Let's Encrypt certificate for it in
+   Site Tools → Security → SSL Manager.
+
+2. **Redirect the old host** — keep `2d.fabus.app` alive and add this to its
+   `.htaccess` (path and query string are preserved):
+   ```apache
+   <IfModule mod_rewrite.c>
+     RewriteEngine On
+     RewriteCond %{HTTP_HOST} ^2d\.fabus\.app$ [NC]
+     RewriteRule ^(.*)$ https://2d.krea.tr/$1 [L,R=301]
+   </IfModule>
+   ```
+
+3. **Canonicalize the new host** (force HTTPS + strip `www.`) in the
+   `2d.krea.tr` `.htaccess`:
+   ```apache
+   RewriteCond %{HTTPS} off [OR]
+   RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+   RewriteRule ^(.*)$ https://2d.krea.tr/$1 [L,R=301]
+   ```
+
+4. **Search Console:** add `2d.krea.tr` as a property, use the *Change of
+   address* tool from the old property, and submit
+   `https://2d.krea.tr/sitemap.xml`.
+
+5. **Verify** the redirect returns 301 and lands on the new host:
+   ```bash
+   curl -sSI https://2d.fabus.app/about | head -n 5
+   ```
+
+Keep the old host and its redirect in place for at least 6 months so crawlers
+and bookmarked links follow the move.
 
 ### SSL Certificate
 

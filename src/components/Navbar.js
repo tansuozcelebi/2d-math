@@ -25,7 +25,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center gap-2 font-bold text-2xl hover:text-blue-100 transition-colors">
             <span className="text-2xl">✨</span>
             <div className="flex flex-col">
-              <span>FABUS 2D Şekil Üreteci</span>
+              <span>KREA 2D Şekil Üreteci</span>
               <span className="text-xs text-blue-200 font-normal">v{APP_VERSION}</span>
             </div>
           </Link>

@@ -2,10 +2,27 @@
 export const APP_VERSION = '1.0.9';
 export const APP_NAME = '2D Parametrik Matematiksel Şekil Üreteci';
 export const AUTHOR = 'Tansu Özçelebi';
+// Yayın alan adı (domain) - tüm uygulama genelinde tek kaynak
+export const SITE_DOMAIN = '2d.krea.tr';
+export const SITE_URL = `https://${SITE_DOMAIN}`;
 export const REPO_URL = 'https://github.com/tansuozcelebi/2d-math';
+export const CONTACT_EMAIL = 'info@krea.tr';
+export const WEBSITE_URL = 'https://www.krea.tr';
+export const BRAND_NAME = 'Krea.tr';
 export const LINKEDIN_URL = 'https://www.linkedin.com/showcase/fabus-app';
 
 export const VERSION_HISTORY = [
+  {
+    version: '1.0.10',
+    date: '3 Eylül 2026',
+    features: [
+      'Alan adı 2d.fabus.app adresinden 2d.krea.tr adresine taşındı',
+      'Canonical, Open Graph, Twitter Card, sitemap.xml ve robots.txt adresleri güncellendi',
+      'Dışa aktarma (JPG/PDF) filigranı yeni alan adını gösteriyor',
+      'Alan adı, iletişim e-postası ve kurumsal web adresi version.js içinde merkezileştirildi',
+      'Arayüz ve çeviri metinlerindeki marka adı KREA olarak güncellendi'
+    ]
+  },
   {
     version: '1.0.7',
     date: '14 Aralık 2024',
