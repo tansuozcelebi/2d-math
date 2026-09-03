@@ -122,6 +122,13 @@ If deploying to a subfolder instead of the domain root:
 The app moved from `2d.fabus.app` to `2d.krea.tr`. To keep existing links and
 search rankings, serve a permanent (301) redirect from the old host.
 
+The first two subsections are alternatives — pick the one matching where
+production is served. This repository is also connected to a **Netlify** site
+(`2d-math`) that builds every pull request, so if production has moved off
+SiteGround, follow *On Netlify*. The *Either host* steps apply in both cases.
+
+#### On Apache / SiteGround
+
 1. **Point DNS** for `2d.krea.tr` at the SiteGround server (A record, or CNAME
    to the hosting hostname) and issue a Let's Encrypt certificate for it in
    Site Tools → Security → SSL Manager.
@@ -144,11 +151,33 @@ search rankings, serve a permanent (301) redirect from the old host.
    RewriteRule ^(.*)$ https://2d.krea.tr/$1 [L,R=301]
    ```
 
-4. **Search Console:** add `2d.krea.tr` as a property, use the *Change of
+#### On Netlify
+
+There is no `netlify.toml` or `public/_redirects` in the repository — the site
+is wired up through the Netlify UI, so the domain move is done there:
+
+1. **Add the new domain:** Site configuration → Domain management → *Add a
+   domain* → `2d.krea.tr`, then set it as the **primary domain**. Point the DNS
+   record at Netlify (`CNAME` to the site's `*.netlify.app` hostname, or
+   Netlify DNS) and let it provision the certificate.
+
+2. **Keep `2d.fabus.app` attached** as a secondary domain. Netlify issues a 301
+   from every non-primary domain to the primary one automatically, so the old
+   host keeps redirecting with the path intact — do not detach it.
+
+3. **Deep links:** because this is a client-side–routed SPA, `/about` only
+   resolves if the host rewrites unknown paths to `index.html`. On Apache that
+   is the `.htaccess` rule above; on Netlify it needs a `public/_redirects`
+   file containing `/*  /index.html  200`, which this repository does not
+   currently ship.
+
+#### Either host
+
+1. **Search Console:** add `2d.krea.tr` as a property, use the *Change of
    address* tool from the old property, and submit
    `https://2d.krea.tr/sitemap.xml`.
 
-5. **Verify** the redirect returns 301 and lands on the new host:
+2. **Verify** the redirect returns 301 and lands on the new host:
    ```bash
    curl -sSI https://2d.fabus.app/about | head -n 5
    ```
