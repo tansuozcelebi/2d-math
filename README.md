@@ -7,6 +7,8 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen)]()
 
+🌐 **Canlı site / Live site / Live-Website:** https://2d.krea.tr
+
 Languages: [Türkçe](#türkçe) | [English](#english) | [Deutsch](#deutsch)
 
 ---
@@ -55,8 +57,9 @@ Languages: [Türkçe](#türkçe) | [English](#english) | [Deutsch](#deutsch)
 - Artır: `npm run version:patch|minor|major` (scripts/updateVersion.js)
 
 ### İletişim
-- E-posta: developer@example.com
+- E-posta: info@krea.tr
 - GitHub: https://github.com/tansuozcelebi
+- Web: https://2d.krea.tr
 
 ### Lisans
 - MIT Lisansı
@@ -107,8 +110,9 @@ Languages: [Türkçe](#türkçe) | [English](#english) | [Deutsch](#deutsch)
 - Bump: `npm run version:patch|minor|major` (scripts/updateVersion.js)
 
 ### Contact
-- Email: developer@example.com
+- Email: info@krea.tr
 - GitHub: https://github.com/tansuozcelebi
+- Web: https://2d.krea.tr
 
 ### License
 - MIT License
@@ -159,8 +163,9 @@ Languages: [Türkçe](#türkçe) | [English](#english) | [Deutsch](#deutsch)
 - Erhöhen: `npm run version:patch|minor|major` (scripts/updateVersion.js)
 
 ### Kontakt
-- E-Mail: developer@example.com
+- E-Mail: info@krea.tr
 - GitHub: https://github.com/tansuozcelebi
+- Web: https://2d.krea.tr
 
 ### Lizenz
 - MIT-Lizenz

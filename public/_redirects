@@ -1,0 +1,5 @@
+# SPA fallback — istemci tarafında yönlendirilen rotalar (/about gibi) doğrudan
+# açıldığında sunucuda karşılığı olan bir dosya yok. Bilinmeyen her yolu
+# index.html ile 200 olarak sun; React Router rotayı devralsın.
+# Netlify bu dosyayı okur; Apache/SiteGround tarafında aynı işi .htaccess yapar.
+/*  /index.html  200

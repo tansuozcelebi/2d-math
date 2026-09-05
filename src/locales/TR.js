@@ -31,8 +31,8 @@ export const TR = {
   // About Page
   about: {
     title: 'Hakkımda',
-    profileTitle: 'Fabus.app',
-    profileSubtitle: 'Yazılımı geliştiren Fabus.app ekibi İzmir\'de bulunan ekip güçlü ve dinamik yapısı ile MES, WMS ve DMS içeren bir BPM ve CRM yazılımı geliştirmektedir.',
+    profileTitle: 'Krea.tr',
+    profileSubtitle: 'Yazılımı geliştiren Krea.tr ekibi İzmir\'de bulunan ekip güçlü ve dinamik yapısı ile MES, WMS ve DMS içeren bir BPM ve CRM yazılımı geliştirmektedir.',
     
     aboutSection: '🎯 Hakkında',
     aboutText: 'Matematiği ve sanat tasarımını birleştiren bir yazılım geliştirici. Parametrik 2D şekil üretimi, fraktal geometri ve dinamik görselleştirme konularında uzmanlaştım. Bu proje, matematiksel formülasyonların estetik ve etkileşimli bir şekilde nasıl görselleştirilebileceğini göstermeyi amaçlamaktadır.',

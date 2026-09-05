@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import gsap from 'gsap';
 import { Maximize2, Minimize2, GripHorizontal, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
+import { SITE_DOMAIN } from '../config/version';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -656,7 +657,7 @@ const ShapeCard = ({ title, shapeType, defaultParams, paramMeta = {}, isMaximize
 
       const formulaData = Formulas[shapeType] || {};
       const timestamp = new Date().toLocaleString('tr-TR');
-      const watermark = '2d.fabus.app sitesinden oluşturulmuştur';
+      const watermark = `${SITE_DOMAIN} sitesinden oluşturulmuştur`;
 
       // SVG container'ı canvas'a dönüştür
       const canvas = await html2canvas(svgContainerRef.current, {
