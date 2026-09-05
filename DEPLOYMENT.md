@@ -23,6 +23,7 @@
      - `manifest.json`
      - `robots.txt`
      - `sitemap.xml`
+     - `_redirects` (used by Netlify; harmless on Apache)
      - `logo/` folder
      - `static/` folder
 
@@ -153,8 +154,8 @@ SiteGround, follow *On Netlify*. The *Either host* steps apply in both cases.
 
 #### On Netlify
 
-There is no `netlify.toml` or `public/_redirects` in the repository — the site
-is wired up through the Netlify UI, so the domain move is done there:
+There is no `netlify.toml` in the repository — the site is wired up through the
+Netlify UI, so the domain move is done there:
 
 1. **Add the new domain:** Site configuration → Domain management → *Add a
    domain* → `2d.krea.tr`, then set it as the **primary domain**. Point the DNS
@@ -166,10 +167,11 @@ is wired up through the Netlify UI, so the domain move is done there:
    host keeps redirecting with the path intact — do not detach it.
 
 3. **Deep links:** because this is a client-side–routed SPA, `/about` only
-   resolves if the host rewrites unknown paths to `index.html`. On Apache that
-   is the `.htaccess` rule above; on Netlify it needs a `public/_redirects`
-   file containing `/*  /index.html  200`, which this repository does not
-   currently ship.
+   resolves if the host rewrites unknown paths to `index.html`. On Netlify that
+   is `public/_redirects` (`/*  /index.html  200`), which the repository ships
+   and the build copies into `build/`; on Apache the `.htaccess` rule above
+   does the same job. `_redirects` is inert on Apache, so shipping it costs
+   nothing there.
 
 #### Either host
 
